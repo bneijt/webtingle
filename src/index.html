@@ -12,19 +12,36 @@
 </head>
 
 <body>
-  <section class="section">
-    <div class="container">
-      <h1 class="title">
-        Hello tingles
-      </h1>
-      <p class="subtitle">
-        <div id="app">
-          <li v-for="item in state" :key="item.action + item.host">
-            I {{ item.action }} {{ item.host }} resulting in {{ item.result }} <button v-on:click="touch(item.host)"><i class="fas fa-hand-holding-heart"></i></button>
-          </li>
-        </div>
-      </p>
+  <section class="hero is-primary">
+    <div class="hero-body">
+      <div class="container">
+        <h1 class="title">
+          Webtingle
+        </h1>
+        <h2 class="subtitle">
+          Let the servers feel each others tingle
+        </h2>
+      </div>
     </div>
+  </section>
+  <section class="section">
+    <div class="container is-fluid">
+      <div id="app">
+        <p class="title">Tingle state</p>
+        <p class="subtitle">Below is a list of tingle actions and results. Press the touch button to touch other servers that visited your server.</p>
+        <p class="content">
+          <ul v-if="state.length > 0">
+            <li v-for="item in state" :key="item.action + item.host">
+              I {{ item.action }} {{ item.host }} resulting in {{ item.result }} <button v-on:click="touch(item.host)" class="button" title="Touch their HTTP"><i class="fas fa-hand-holding-heart"></i></button>
+            </li>
+          </ul>
+          <p v-if="state.length == 0">empty state, refresh me?</p>
+        </p>
+
+
+      </div>
+    </div>
+
   </section>
   <script>
     new Vue({
@@ -48,7 +65,9 @@
             .get('/state')
             .then(response => {
               this.state = response.data
-            })
+            });
+          axios
+            .get('/run');
         },
         touch: function (host) {
           axios.get(`/touch/${host}`)
