@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web tingle server</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.8.1/css/bulma.min.css" integrity="sha256-1nEaE91OpXJD7M6W5uSiqxhdmrY+lOOTHC1iUxU9Pds=" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" integrity="sha256-h20CPZ0QyXlBuAw7A+KluUYx/3pK+c7lYEpqLTlxjYQ=" crossorigin="anonymous" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js" integrity="sha256-ngFW3UnAN0Tnm76mDuu7uUtYEcG3G5H1+zioJw3t+68=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js" integrity="sha256-T/f7Sju1ZfNNfBh7skWn0idlCBcI3RwdLSS4/I7NQKQ=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <section class="section">
+    <div class="container">
+      <h1 class="title">
+        Hello tingles
+      </h1>
+      <p class="subtitle">
+        <div id="app">
+          <li v-for="item in state" :key="item.action + item.host">
+            I {{ item.action }} {{ item.host }} resulting in {{ item.result }} <button v-on:click="touch(item.host)"><i class="fas fa-hand-holding-heart"></i></button>
+          </li>
+        </div>
+      </p>
+    </div>
+  </section>
+  <script>
+    new Vue({
+      el: '#app',
+      data() {
+        return {
+          state: []
+        }
+      },
+      mounted() {
+        this.update();
+        setInterval(this.update, 3000);
+
+      },
+      beforeDestroy() {
+        clearInterval(this.timer);
+      },
+      methods: {
+        update: function () {
+          axios
+            .get('/state')
+            .then(response => {
+              this.state = response.data
+            })
+        },
+        touch: function (host) {
+          axios.get(`/touch/${host}`)
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>
