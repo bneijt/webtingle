@@ -29,9 +29,10 @@
       <div id="app">
         <p class="title">Tingle state</p>
         <p class="subtitle">Below is a list of tingle actions and results. Press the touch button to touch other servers that visited your server.</p>
-        <p class="content">
-          <ul v-if="state.length > 0">
+        <div class="content is-size-4">
+          <ul v-if="state.length > 0" class="fa-ul">
             <li v-for="item in state" :key="item.action + item.host" v-bind:class="randomColor()">
+              <span class="fa-li"><i class="fas fa-spinner fa-pulse"></i></span>
               I {{ item.action }} {{ item.host }} resulting in {{ item.result }}
               <button v-on:click="touch(item.host)" class="button" title="Touch their HTTP"><i class="fas fa-hand-sparkles"></i></button>
             </li>
@@ -41,7 +42,7 @@
             <input v-model="target" placeholder="address to touch" />
             <button v-on:click="touch(target)" class="button" title="Touch their HTTP"><i class="fas fa-hand-sparkles"></i></button>
           </p>
-        </p>
+        </div>
       </div>
     </div>
   </section>
@@ -67,6 +68,7 @@
           axios
             .get('/state')
             .then(response => {
+              response.data.sort();
               this.state = response.data
             });
         },

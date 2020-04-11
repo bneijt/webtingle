@@ -81,13 +81,12 @@ struct ToucherFeeler {
 
 impl ToucherFeeler {
     fn tick(&mut self, context: &mut Context<Self>) {
-        println!("tick");
         let current_action_idx = self.action_idx.fetch_add(1, Ordering::SeqCst);
-        println!("Acting on {}", current_action_idx);
         let state_mutex = self.state_data.clone();
         let state = self.state_data.read().unwrap();
         let tingle_vec: Vec<Tingle> = state.iter().map(|(_, tingle)| tingle.clone()).collect();
         if tingle_vec.len() > 0 {
+            println!("Acting on {}", current_action_idx);
             let tingle: Tingle = (*tingle_vec
                 .get(current_action_idx % tingle_vec.len())
                 .unwrap())
@@ -116,7 +115,6 @@ impl ToucherFeeler {
                                     ..tingle
                                 },
                             );
-                            println!("ok")
                         }
 
                         Err(_) => {
@@ -128,13 +126,11 @@ impl ToucherFeeler {
                                     ..tingle
                                 },
                             );
-                            println!("fail")
                         }
                     };
                 }));
             }
         };
-        println!("tick")
     }
 }
 
@@ -153,12 +149,10 @@ impl Actor for ToucherFeeler {
 async fn main() -> std::io::Result<()> {
     let address = "0.0.0.0";
     let port = env::var("PORT").unwrap_or(String::from("8080"));
-
+    println!("Starting at port {}", port);
     let state: HashMap<String, Tingle> = HashMap::new();
     let state_data = web::Data::new(RwLock::new(state));
     let state_data_clone = state_data.clone();
-    let action_idx = web::Data::new(AtomicUsize::new(0usize));
-    let action_idx_clone = action_idx.clone();
     let server = HttpServer::new(move || {
         App::new()
             .app_data(state_data.clone())
@@ -169,10 +163,10 @@ async fn main() -> std::io::Result<()> {
     .bind(format!("{}:{}", address, port))
     .expect("Could not bind to address!")
     .run();
-
-    ToucherFeeler::create(|ctx: &mut Context<ToucherFeeler>| ToucherFeeler {
+    let action_idx = web::Data::new(AtomicUsize::new(0usize));
+    ToucherFeeler::create(|_ctx: &mut Context<ToucherFeeler>| ToucherFeeler {
         state_data: state_data_clone,
-        action_idx: action_idx_clone,
+        action_idx: action_idx,
     });
 
     server.await
