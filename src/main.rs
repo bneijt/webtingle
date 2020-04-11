@@ -71,15 +71,25 @@ impl ToucherFeeler {
         let mut state = self.state_data.write().unwrap();
         let tingle_vec: Vec<Tingle> = state.iter().map(|(_, tingle)| tingle.clone()).collect();
         if tingle_vec.len() > 0 {
-            // let client = Client::default();
+            let client = Client::default();
             let tingle: Tingle = (*tingle_vec
                 .get(current_action_idx % tingle_vec.len())
                 .unwrap())
             .clone();
             if tingle.action == "touch" {
                 let host: String = tingle.host.clone();
-                // let reponse = client.get(format!("http://{}", host)).send();
-    
+                // let reponse = client.get(format!("http://{}", host)).send().unwrap();
+                // let mut client = Client::new();
+                // client
+                //     .get("https://www.rust-lang.org") // <- Create request builder
+                //     .header("User-Agent", "Actix-web")
+                //     .send() // <- Send http request
+                //     // .map_err(Error::from)
+                //     .map(|res| {
+                //         HttpResponse::Ok()
+                //             .content_type("application/json")
+                //             .body("{}")
+                //     })
                 // match response {
                 //     Ok(result) => state.insert(
                 //         tingle.host.clone(),
