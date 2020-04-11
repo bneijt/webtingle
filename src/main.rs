@@ -17,7 +17,7 @@
 use actix::fut::wrap_future;
 use actix::prelude::*;
 use actix::utils::IntervalFunc;
-use actix_files::NamedFile;
+// use actix_files::NamedFile;
 use actix_web::client::Client;
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use serde::Serialize;
@@ -48,8 +48,8 @@ async fn index(
             result: "nice warm tingles".into(),
         },
     );
-    // HttpResponse::Ok().body(include_str!("index.html"))
-    NamedFile::open("src/index.html").unwrap()
+    HttpResponse::Ok().body(include_str!("index.html"))
+    // NamedFile::open("src/index.html").unwrap()
 }
 
 async fn get_state(state_data: web::Data<RwLock<HashMap<String, Tingle>>>) -> impl Responder {
@@ -162,7 +162,6 @@ async fn main() -> std::io::Result<()> {
     let server = HttpServer::new(move || {
         App::new()
             .app_data(state_data.clone())
-            .app_data(action_idx.clone())
             .route("/", web::get().to(index))
             .route("/state", web::get().to(get_state))
             .route("/touch/{party}", web::get().to(touch))
