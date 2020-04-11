@@ -1,7 +1,22 @@
+// Simple server to interact with other servers a bit
+// Copyright (C) 2020 bram@neijt.nl
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 use actix::fut::wrap_future;
 use actix::prelude::*;
 use actix::utils::IntervalFunc;
-use actix::System;
 use actix_files::NamedFile;
 use actix_web::client::Client;
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
@@ -69,6 +84,7 @@ impl ToucherFeeler {
         println!("tick");
         let current_action_idx = self.action_idx.fetch_add(1, Ordering::SeqCst);
         println!("Acting on {}", current_action_idx);
+        let state_mutex = self.state_data.clone();
         let state = self.state_data.read().unwrap();
         let tingle_vec: Vec<Tingle> = state.iter().map(|(_, tingle)| tingle.clone()).collect();
         if tingle_vec.len() > 0 {
@@ -80,29 +96,40 @@ impl ToucherFeeler {
                 let host: String = tingle.host.clone();
 
                 context.spawn(wrap_future(async move {
+                    let tingle: Tingle = (*tingle_vec
+                        .get(current_action_idx % tingle_vec.len())
+                        .unwrap())
+                    .clone();
                     let client = Client::default();
                     let response = client.get(format!("http://{}", host)).send().await;
                     match response {
-                        Ok(result) => println!("ok"),
-                        // state.insert(
-                        //     tingle.host.clone(),
-                        //     Tingle {
-                        //         result: result
-                        //             .status()
-                        //             .canonical_reason()
-                        //             .unwrap_or("an unknown but good feeling")
-                        //             .to_string(),
-                        //         ..tingle
-                        //     },
-                        // ),
-                        Err(_) =>  println!("fail"),
-                        // state.insert(
-                        //     tingle.host.clone(),
-                        //     Tingle {
-                        //         result: String::from("a feeling of rejection"),
-                        //         ..tingle
-                        //     },
-                        // ),
+                        Ok(result) => {
+                            let mut state = state_mutex.write().unwrap();
+                            state.insert(
+                                tingle.host.clone(),
+                                Tingle {
+                                    result: result
+                                        .status()
+                                        .canonical_reason()
+                                        .unwrap_or("an unknown but good feeling")
+                                        .to_string(),
+                                    ..tingle
+                                },
+                            );
+                            println!("ok")
+                        }
+
+                        Err(_) => {
+                            let mut state = state_mutex.write().unwrap();
+                            state.insert(
+                                tingle.host.clone(),
+                                Tingle {
+                                    result: String::from("a feeling of rejection"),
+                                    ..tingle
+                                },
+                            );
+                            println!("fail")
+                        }
                     };
                 }));
             }
