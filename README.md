@@ -7,7 +7,7 @@ Meant to be a demo app for a simple runtime state application where you can chec
 
 Build status and binary artifact at:
 
-    https://app.circleci.com/pipelines/github/bneijt/webtingle?branch=master
+https://app.circleci.com/pipelines/github/bneijt/webtingle?branch=master
 
 
 Development notes
