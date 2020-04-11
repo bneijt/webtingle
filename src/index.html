@@ -31,24 +31,27 @@
         <p class="subtitle">Below is a list of tingle actions and results. Press the touch button to touch other servers that visited your server.</p>
         <p class="content">
           <ul v-if="state.length > 0">
-            <li v-for="item in state" :key="item.action + item.host">
-              I {{ item.action }} {{ item.host }} resulting in {{ item.result }} <button v-on:click="touch(item.host)" class="button" title="Touch their HTTP"><i class="fas fa-hand-holding-heart"></i></button>
+            <li v-for="item in state" :key="item.action + item.host" v-bind:class="randomColor()">
+              I {{ item.action }} {{ item.host }} resulting in {{ item.result }}
+              <button v-on:click="touch(item.host)" class="button" title="Touch their HTTP"><i class="fas fa-hand-sparkles"></i></button>
             </li>
           </ul>
           <p v-if="state.length == 0">empty state, refresh me?</p>
+          <p>
+            <input v-model="target" placeholder="address to touch" />
+            <button v-on:click="touch(target)" class="button" title="Touch their HTTP"><i class="fas fa-hand-sparkles"></i></button>
+          </p>
         </p>
-
-
       </div>
     </div>
-
   </section>
   <script>
     new Vue({
       el: '#app',
       data() {
         return {
-          state: []
+          state: [],
+          target: ""
         }
       },
       mounted() {
@@ -66,8 +69,10 @@
             .then(response => {
               this.state = response.data
             });
-          axios
-            .get('/run');
+        },
+        randomColor: function () {
+          const colors = ["has-text-primary", "has-text-info", "has-text-link", "has-text-success", "has-text-warning", "has-text-danger"];
+          return colors[Math.floor(Math.random() * colors.length)];
         },
         touch: function (host) {
           axios.get(`/touch/${host}`)
