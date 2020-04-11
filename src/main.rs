@@ -1,3 +1,6 @@
+use actix::fut::wrap_future;
+use actix::prelude::*;
+use actix::utils::IntervalFunc;
 use actix::System;
 use actix_files::NamedFile;
 use actix_web::client::Client;
@@ -8,8 +11,6 @@ use std::env;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::RwLock;
 use std::time::Duration;
-use actix::prelude::*;
-use actix::utils::IntervalFunc;
 
 #[derive(Clone, Serialize)]
 struct Tingle {
@@ -68,49 +69,42 @@ impl ToucherFeeler {
         println!("tick");
         let current_action_idx = self.action_idx.fetch_add(1, Ordering::SeqCst);
         println!("Acting on {}", current_action_idx);
-        let mut state = self.state_data.write().unwrap();
+        let state = self.state_data.read().unwrap();
         let tingle_vec: Vec<Tingle> = state.iter().map(|(_, tingle)| tingle.clone()).collect();
         if tingle_vec.len() > 0 {
-            let client = Client::default();
             let tingle: Tingle = (*tingle_vec
                 .get(current_action_idx % tingle_vec.len())
                 .unwrap())
             .clone();
             if tingle.action == "touch" {
                 let host: String = tingle.host.clone();
-                // let reponse = client.get(format!("http://{}", host)).send().unwrap();
-                // let mut client = Client::new();
-                // client
-                //     .get("https://www.rust-lang.org") // <- Create request builder
-                //     .header("User-Agent", "Actix-web")
-                //     .send() // <- Send http request
-                //     // .map_err(Error::from)
-                //     .map(|res| {
-                //         HttpResponse::Ok()
-                //             .content_type("application/json")
-                //             .body("{}")
-                //     })
-                // match response {
-                //     Ok(result) => state.insert(
-                //         tingle.host.clone(),
-                //         Tingle {
-                //             result: result
-                //                 .status()
-                //                 .canonical_reason()
-                //                 .unwrap_or("an unknown but good feeling")
-                //                 .to_string(),
-                //             ..tingle
-                //         },
-                //     ),
-                //     Err(_) => state.insert(
-                //         tingle.host.clone(),
-                //         Tingle {
-                //             result: String::from("a feeling of rejection"),
-                //             ..tingle
-                //         },
-                //     ),
-                // println!("Touch");
-                // }
+
+                context.spawn(wrap_future(async move {
+                    let client = Client::default();
+                    let response = client.get(format!("http://{}", host)).send().await;
+                    match response {
+                        Ok(result) => println!("ok"),
+                        // state.insert(
+                        //     tingle.host.clone(),
+                        //     Tingle {
+                        //         result: result
+                        //             .status()
+                        //             .canonical_reason()
+                        //             .unwrap_or("an unknown but good feeling")
+                        //             .to_string(),
+                        //         ..tingle
+                        //     },
+                        // ),
+                        Err(_) =>  println!("fail"),
+                        // state.insert(
+                        //     tingle.host.clone(),
+                        //     Tingle {
+                        //         result: String::from("a feeling of rejection"),
+                        //         ..tingle
+                        //     },
+                        // ),
+                    };
+                }));
             }
         };
         println!("tick")
@@ -118,17 +112,15 @@ impl ToucherFeeler {
 }
 
 impl Actor for ToucherFeeler {
-   type Context = Context<Self>;
+    type Context = Context<Self>;
 
-   fn started(&mut self, context: &mut Context<Self>) {
-       // spawn an interval stream into our context
-       IntervalFunc::new(Duration::from_secs(3), Self::tick)
-           .finish()
-           .spawn(context);
-   }
+    fn started(&mut self, context: &mut Context<Self>) {
+        // spawn an interval stream into our context
+        IntervalFunc::new(Duration::from_secs(3), Self::tick)
+            .finish()
+            .spawn(context);
+    }
 }
-
-
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -151,14 +143,11 @@ async fn main() -> std::io::Result<()> {
     .bind(format!("{}:{}", address, port))
     .expect("Could not bind to address!")
     .run();
-    
-    ToucherFeeler::create(|ctx: &mut Context<ToucherFeeler>| {
-        ToucherFeeler{
-            state_data: state_data_clone,
-            action_idx: action_idx_clone,
-        }
+
+    ToucherFeeler::create(|ctx: &mut Context<ToucherFeeler>| ToucherFeeler {
+        state_data: state_data_clone,
+        action_idx: action_idx_clone,
     });
 
     server.await
-
 }
