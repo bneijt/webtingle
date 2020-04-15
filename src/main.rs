@@ -26,6 +26,8 @@ use std::env;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::RwLock;
 use std::time::Duration;
+use std::io;
+use std::io::Write;
 
 #[derive(Clone, Serialize)]
 struct Tingle {
@@ -86,7 +88,8 @@ impl ToucherFeeler {
         let state = self.state_data.read().unwrap();
         let tingle_vec: Vec<Tingle> = state.iter().map(|(_, tingle)| tingle.clone()).collect();
         if tingle_vec.len() > 0 {
-            println!("Acting on {}", current_action_idx);
+            print!(".");
+            io::stdout().flush().expect("Could not flush stdout");
             let tingle: Tingle = (*tingle_vec
                 .get(current_action_idx % tingle_vec.len())
                 .unwrap())
