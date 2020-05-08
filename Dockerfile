@@ -7,8 +7,9 @@ RUN cargo build --release
 FROM debian:buster-slim
 RUN mkdir -p /opt/app
 WORKDIR /opt/app
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
   ca-certificates \
+  && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 ENV PORT=8080
 USER daemon
