@@ -23,11 +23,11 @@ use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::env;
+use std::io;
+use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::RwLock;
 use std::time::Duration;
-use std::io;
-use std::io::Write;
 
 #[derive(Clone, Serialize)]
 struct Tingle {
@@ -42,6 +42,22 @@ async fn index(
 ) -> impl Responder {
     let host = format!("{}", req.peer_addr().unwrap().ip());
     let mut state = state_data.write().unwrap();
+
+    req.headers().get("X-Forwarded-For").map(|header| {
+        let forwarded_header = String::from(header.to_str().unwrap());
+        for forward_header_entry in forwarded_header.split(",") {
+            let remote_party = String::from(forward_header_entry);
+            state.insert(
+                remote_party.clone(),
+                Tingle {
+                    action: "felt".into(),
+                    host: remote_party,
+                    result: "nice warm tingles".into(),
+                },
+            );
+        }
+    });
+
     state.insert(
         host.clone(),
         Tingle {
@@ -51,7 +67,7 @@ async fn index(
         },
     );
     HttpResponse::Ok().body(include_str!("index.html"))
-    // NamedFile::open("src/index.html").unwrap()
+    // for development: NamedFile::open("src/index.html").unwrap()
 }
 
 async fn get_state(state_data: web::Data<RwLock<HashMap<String, Tingle>>>) -> impl Responder {
